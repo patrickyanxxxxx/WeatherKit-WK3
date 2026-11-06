@@ -4,7 +4,8 @@ function config(argument, env) {
   let c = Object.assign({}, env || {});
   if (typeof argument === 'string' && argument.trim()) {
     const s = argument.trim();
-    if (s[0] === '{') Object.assign(c, JSON.parse(s));
+    if (/^https?:\/\//i.test(s)) c.endpoint=s.replace(/^["']|["']$/g,'');
+    else if (s[0] === '{') Object.assign(c, JSON.parse(s));
     else {
       const seen = new Set();
       for (const item of s.split('&')) {
