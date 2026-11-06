@@ -5,7 +5,13 @@ function config(argument, env) {
     const s = argument.trim();
     if (/^https?:\/\//i.test(s)) c.endpoint=s.replace(/^["']|["']$/g,'');
     else if (s[0] === '{') Object.assign(c, JSON.parse(s));
-    else {
+    else if (/^(?:endpoint|RADAR_ENDPOINT)\s*[:=]/i.test(s)) {
+      const m=s.match(/^(?:endpoint|RADAR_ENDPOINT)\s*[:=]\s*["']?(https?:\/\/[^"'\s,}&]+)["']?$/i);
+      if (m) c.endpoint=m[1];
+      else if (/^(?:endpoint|RADAR_ENDPOINT)=/i.test(s)) {
+        const i=s.indexOf('='); c.endpoint=decodeURIComponent(s.slice(i+1).replace(/\+/g,' '));
+      } else throw Error('config');
+    } else {
       const seen = new Set();
       for (const item of s.split('&')) {
         const i = item.indexOf('='); if (i < 0) throw Error('config');
