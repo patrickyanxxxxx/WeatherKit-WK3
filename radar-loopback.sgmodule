@@ -1,0 +1,11 @@
+# EXPERIMENTAL radar echo only — not calibrated rain intensity.
+# Keep original v3.3.6 enabled; disable all earlier artificial map tests.
+#!name=WK3 Radar Loopback Diagnostic
+#!desc=隔离诊断：固定127.0.0.1:8768，保留正式天气模块，关闭其他雷达实验模块
+#!version=0.1.0-test-loopback.1
+[Rule]
+AND,((DOMAIN,weather-map2.apple.com),(PROTOCOL,UDP),(DEST-PORT,443)),REJECT
+[Script]
+WK3.Radar.Loopback = type=http-request,pattern=^https://weather-map2\.apple\.com/v1/mapOverlay/precipitationRadarMap\?,script-path=https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/rainviewer-native/radar-surge-loopback.js?v=loopback-1,timeout=10,engine=webview,debug=1,binary-body-mode=true
+[MITM]
+hostname = %APPEND% weather-map2.apple.com
