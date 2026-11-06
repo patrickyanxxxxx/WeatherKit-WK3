@@ -9,10 +9,12 @@
             || q.get("z") !== "7" || q.get("x") !== "108" || q.get("y") !== "47"
             || q.get("scale") !== "2" || ($request.method ?? "GET") !== "GET") return $done({});
         const now = Date.now();
-        // Latest 10-minute radar boundary ending in :05, :15, ... UTC.
-        const target = Math.floor((now - 300000) / 600000) * 600000 + 300000;
         const frame = Date.parse(q.get("frameTime") ?? "");
-        if (!Number.isFinite(frame) || frame !== target) return $done({});
+        // The captured series can use either :00/:10 or :05/:15 boundaries.
+        // Select its latest past frame; do not assume a fixed UTC phase.
+        if (!Number.isFinite(frame) || frame % 300000 !== 0
+            || frame > now || now - frame >= 600000) return $done({});
+        const target = frame;
         const bytes = new Uint8Array(65604);
         bytes.set([171,75,84,88,32,49,49,187,13,10,26,10]);
         const view = new DataView(bytes.buffer);
