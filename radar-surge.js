@@ -3,7 +3,8 @@
 function config(argument, env) {
   let c = Object.assign({}, env || {});
   if (typeof argument === 'string' && argument.trim()) {
-    const s = argument.trim();
+    const raw = argument.trim();
+    const s = raw.replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, (_, d, q) => d ?? q).trim();
     const unquoted = s.replace(/^(["'])(.*)\1$/, '$2');
     if (/^https?:\/\//i.test(unquoted)) c.endpoint=unquoted;
     else if (s[0] === '{') Object.assign(c, JSON.parse(s));

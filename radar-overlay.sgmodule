@@ -2,11 +2,11 @@
 # Keep original v3.3.6 enabled; disable all earlier artificial map tests.
 #!name=WK3 Experimental Radar Overlay LOCAL
 #!desc=Radar echo only; retain original WeatherKit v3.3.6 module
-#!version=0.1.0-test-radar-echo.3
+#!version=0.1.0-test-radar-echo.4
 #!arguments=endpoint:http://127.0.0.1:8768/v1/radar
 [Rule]
 AND,((DOMAIN,weather-map2.apple.com),(PROTOCOL,UDP),(DEST-PORT,443)),REJECT
 [Script]
-WK3.Experimental.Radar = type=http-request,pattern=^https://weather-map2\.apple\.com/v1/mapOverlay/precipitationRadarMap\?,script-path=https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/rainviewer-native/radar-surge.js?v=echo-3,timeout=10,engine=webview,debug=1,binary-body-mode=true,argument="{{{endpoint}}}"
+WK3.Experimental.Radar = type=http-request,pattern=^https://weather-map2\.apple\.com/v1/mapOverlay/precipitationRadarMap\?,script-path=https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/rainviewer-native/radar-surge.js?v=echo-4,timeout=10,engine=webview,debug=1,binary-body-mode=true,argument="{{{endpoint}}}"
 [MITM]
 hostname = %APPEND% weather-map2.apple.com
