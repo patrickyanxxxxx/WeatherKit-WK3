@@ -1,0 +1,31 @@
+# EXPERIMENTAL radar echo only — not calibrated rain intensity.
+# Keep original v3.3.6 enabled; disable all earlier artificial map tests.
+name: WK3 Experimental Radar Overlay LOCAL
+description: Radar only; keep original v3.3.6 enabled
+env_schema:
+  RADAR_ENDPOINT:
+    name: Experimental radar gateway
+    default_value: 'http://127.0.0.1:8768/v1/radar'
+    description: User supplied full /v1/radar endpoint; empty passes through
+rules:
+- and:
+    match:
+    - domain:
+        match: weather-map2.apple.com
+    - protocol:
+        match: UDP
+    - dest_port:
+        match: '443'
+    policy: REJECT
+scriptings:
+- http_request:
+    name: WK3.Experimental.Radar
+    match: '^https://weather-map2\.apple\.com/v1/mapOverlay/precipitationRadarMap\?'
+    script_url: https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/rainviewer-native/radar-egern.js?v=echo-1
+    timeout: 10
+    body_required: false
+    binary_body: true
+mitm:
+  hostnames:
+    includes:
+    - weather-map2.apple.com
