@@ -102,7 +102,7 @@ function binaryString(bytes) {
   try {
     const t = tile($request, Math.floor(Date.now() / 1000));
     if (!t) return done({});
-    console.log('[WK3 RADAR] build=loopback-1 route-ok');
+    console.log('[WK3 RADAR] build=loopback-2 route-ok');
     stage = 'fixed-loopback';
     const endpoint = new URL('http://127.0.0.1:8768/v1/radar');
     if (!endpoint) { console.log('[WK3 RADAR] passthrough endpoint-empty'); return done({}); }
@@ -110,7 +110,7 @@ function binaryString(bytes) {
     console.log('[WK3 RADAR] gateway-request z=' + t.z + ' x=' + t.x + ' y=' + t.y + ' valid=' + t.time);
     timer = setTimeout(() => { console.log('[WK3 RADAR] passthrough timeout'); done({}); }, 8500);
     const raw = await new Promise((resolve, reject) => {
-      $httpClient.get({ url: gatewayURL(endpoint, t), headers: { Accept: 'image/ktx' }, timeout: 8, 'binary-mode': true, 'auto-redirect': false, 'auto-cookie': false }, (error, response, data) => error ? reject(Error('network')) : resolve({ response, data }));
+      $httpClient.get({ url: gatewayURL(endpoint, t), headers: { Accept: 'image/ktx' }, policy: 'DIRECT', timeout: 8, 'binary-mode': true, 'auto-redirect': false, 'auto-cookie': false }, (error, response, data) => error ? reject(Error('network')) : resolve({ response, data }));
     });
     if (finished) return;
     const status = Number(raw.response?.status ?? raw.response?.statusCode ?? 0);
@@ -123,7 +123,7 @@ function binaryString(bytes) {
   } catch (error) {
     const known = ['config','status','marker','headers','time','source-time','binary','size','ktx'];
     const reason = known.includes(error?.message) ? error.message : (error?.name === 'ReferenceError' ? 'runtime-api' : (stage === 'request' ? 'network' : 'unknown'));
-    const type=['TypeError','SyntaxError','ReferenceError','Error'].includes(error?.name)?error.name:'other'; console.log('[WK3 RADAR] build=loopback-1 passthrough stage=' + stage + ' reason=' + reason + ' type=' + type); done({});
+    const type=['TypeError','SyntaxError','ReferenceError','Error'].includes(error?.name)?error.name:'other'; console.log('[WK3 RADAR] build=loopback-2 passthrough stage=' + stage + ' reason=' + reason + ' type=' + type); done({});
   }
   finally { if (timer) clearTimeout(timer); }
 })();
