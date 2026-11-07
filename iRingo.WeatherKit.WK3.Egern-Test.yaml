@@ -1,4 +1,4 @@
-name: 'WeatherKit-WK3 Egern 测试8（上游算法参数）'
+name: 'WeatherKit-WK3 Egern 测试9（欧盟标尺与昨日对比）'
 description: '空气质量、原生预警与雨雪分钟增强。'
 author: WeatherKit-WK3 contributors
 homepage: https://github.com/patrickyanxxxxx/WeatherKit-WK3
@@ -117,7 +117,7 @@ scriptings:
       LogLevel: '{{{LogLevel}}}'
       HTTP_TIMEOUT_MS: '{{{HTTP_TIMEOUT_MS}}}'
     match: '^https://weatherkit\.apple\.com/api/v[12]/availability/'
-    script_url: https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/egern-alert-minutely-v337/wk3-egern-response-test6.bundle.js?v=3.3.7-test-egern-alert-minutely.6
+    script_url: https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/egern-alert-minutely-v337/wk3-egern-response-gradient-test9.bundle.js?v=3.3.7-test-egern-gradient.9
     timeout: 30
     body_required: true
     binary_body: false
@@ -150,7 +150,7 @@ scriptings:
       LogLevel: '{{{LogLevel}}}'
       HTTP_TIMEOUT_MS: '{{{HTTP_TIMEOUT_MS}}}'
     match: '^https://weatherkit\.apple\.com/api/v[12]/airQualityScale/'
-    script_url: https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/egern-alert-minutely-v337/wk3-egern-request-test6.bundle.js?v=3.3.7-test-egern-alert-minutely.6
+    script_url: https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/egern-alert-minutely-v337/wk3-egern-request-gradient-test9.bundle.js?v=3.3.7-test-egern-gradient.9
     timeout: 30
     body_required: false
     binary_body: false
@@ -182,7 +182,7 @@ scriptings:
       LogLevel: '{{{LogLevel}}}'
       HTTP_TIMEOUT_MS: '{{{HTTP_TIMEOUT_MS}}}'
     match: '^https://weatherkit\.apple\.com/api/v[12]/weatherAlerts\?(?:[^#]*&)?ids=(?!wk3_)[a-zA-Z0-9][a-zA-Z0-9_-]*-[0-9]{9}(?:&|$)'
-    script_url: https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/egern-alert-minutely-v337/wk3-egern-request-test6.bundle.js?v=3.3.7-test-egern-alert-minutely.6
+    script_url: https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/egern-alert-minutely-v337/wk3-egern-request-gradient-test9.bundle.js?v=3.3.7-test-egern-gradient.9
     timeout: 30
     body_required: false
     binary_body: false
@@ -214,7 +214,7 @@ scriptings:
       LogLevel: '{{{LogLevel}}}'
       HTTP_TIMEOUT_MS: '{{{HTTP_TIMEOUT_MS}}}'
     match: '^https://weatherkit\.apple\.com/api/v[12]/weatherAlerts\?(?:[^#]*&)?ids=(?:wk3_[^&#]*|-?[0-9]+(?:\.[0-9]+)?,-?[0-9]+(?:\.[0-9]+)?)(?:&|$)'
-    script_url: https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/egern-alert-minutely-v337/wk3-egern-request-test6.bundle.js?v=3.3.7-test-egern-alert-minutely.6
+    script_url: https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/egern-alert-minutely-v337/wk3-egern-request-gradient-test9.bundle.js?v=3.3.7-test-egern-gradient.9
     timeout: 30
     body_required: false
     binary_body: false
@@ -246,7 +246,7 @@ scriptings:
       LogLevel: '{{{LogLevel}}}'
       HTTP_TIMEOUT_MS: '{{{HTTP_TIMEOUT_MS}}}'
     match: '^https://weatherkit\.apple\.com/api/v[23]/weather/'
-    script_url: https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/egern-alert-minutely-v337/wk3-egern-response-test6.bundle.js?v=3.3.7-test-egern-alert-minutely.6
+    script_url: https://raw.githubusercontent.com/patrickyanxxxxx/WeatherKit-WK3/test/egern-alert-minutely-v337/wk3-egern-response-gradient-test9.bundle.js?v=3.3.7-test-egern-gradient.9
     timeout: 30
     body_required: true
     binary_body: true
