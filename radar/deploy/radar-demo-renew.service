@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew dedicated radar-demo TLS certificate
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/root/.acme.sh/acme.sh --renew -d radar.example.com --ecc

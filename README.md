@@ -47,6 +47,14 @@
 
 五平台统一构建入口为 `npm run build:wk3`：调用 Egern `scripts/build-egern.mjs` 和其他平台 `scripts/build-wk3-platform.mjs`，生成 10 份平台专用 JS。打标签时添加 `-- --version <版本号>`，同时生成 5 份模块至 `dist/` 根目录；Egern 模块改为指向同版本的发行附件，与其他平台一同进入现有构建/Release 工作流。请使用发行附件中的模块；五平台脚本不能互换。
 
+## 雷达增强实验模块
+
+[部署到你自己的 Cloudflare](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fpatrickyanxxxxx%2FWeatherKit-WK3%2Ftree%2Ffeat%2Fcloudflare-radar%2Fcloudflare)。部署页填写你自己的 `VPS_ORIGIN` 和 Secret `VPS_TOKEN`，部署后将自己的 Worker 地址填入模块；没有默认共享后端。
+
+雷达增强版保留正式 v3.3.6 的本地天气脚本与参数：空气质量计算、分钟雨和预警补全仍在 Surge／Loon／Stash／Egern 内执行，相关第三方凭据保留在设备。只有二维雷达回波外推交给自有 VPS，Cloudflare Worker 提供 HTTPS 接入；Worker 不接管普通天气请求。
+
+`npm run build:wk3:radar -- --version 3.3.6 --outdir dist-radar` 仅生成四个平台的完整增强模块和四份雷达脚本，复用已发布天气脚本，不重建普通版。增强模块与普通模块二选一启用；`RADAR_ENDPOINT` 默认空，用户填写自己的 Worker `/v1/radar`。Quantumult X 暂不提供雷达版。部署与实验能力边界见 [Cloudflare 与自有 VPS 指南](cloudflare/README.zh.md)。
+
 ## 代码组织
 
 - `src/wk3/class`、`function`、`process`、`proto`、`utils`：五平台共用的编解码、算法、来源处理与业务逻辑，按上游分类保留；不再嵌套在 Egern 目录。

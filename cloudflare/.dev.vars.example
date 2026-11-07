@@ -1,0 +1,2 @@
+# Your own radar VPS Bearer secret; no shared or default secret.
+VPS_TOKEN=

@@ -1,0 +1,33 @@
+[Unit]
+Description=Experimental radar echo computation service
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=radar-demo
+Group=radar-demo
+WorkingDirectory=/opt/radar-demo
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/etc/radar-demo/token.env
+ExecStart=/usr/bin/python3 /opt/radar-demo/native_gateway.py --host 127.0.0.1 --port 8768 --cache /var/lib/radar-demo/native --source-cache /var/lib/radar-demo/source --token-env VPS_TOKEN
+Restart=on-failure
+RestartSec=5
+StateDirectory=radar-demo
+StateDirectoryMode=0750
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

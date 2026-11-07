@@ -1,0 +1,15 @@
+{
+  "name": "wk3-radar-worker",
+  "private": true,
+  "type": "module",
+  "cloudflare": {
+    "bindings": {
+      "VPS_ORIGIN": {
+        "description": "填写你自己的雷达计算 VPS 的 HTTPS 域名，例如 https://radar.example.com；不要包含 /v1/radar。未填写时不连接任何后端。"
+      },
+      "VPS_TOKEN": {
+        "description": "填写你自己的 VPS 雷达服务的 Bearer 密钥，与该服务的 VPS_TOKEN 一致；按 Secret 保存。不要填写 Cloudflare API Token。"
+      }
+    }
+  }
+}

@@ -138,3 +138,13 @@ dist
 .idea
 
 boxjs.settings.json
+
+# Radar runtime files and local deployment records
+__pycache__/
+*.pyc
+radar/*.env
+radar/source-cache/
+radar/native-cache/
+radar/deployment-result.json
+cloudflare/deployment.json
+dist-radar/
