@@ -53,6 +53,10 @@ Compose 语法已在 VPS 用 `docker compose config --quiet` 验证；本次实�
 
 查询仅允许 `z,x,y,scale,frameTime` 五字段，`z=0..7`、`scale=2`，时间必须带 UTC offset 且按五分钟对齐。冷 tile 返回 202 和 Retry-After；完整七帧准备后返回 200、`image/ktx`、65,604 字节。缺测/未知运动不发布不完整预测。
 
+七帧覆盖构建时当前五分钟格点至其后 60 分钟，间隔十分钟；五分钟请求选择最近已计算帧，最大偏差 300 秒。`X-WK3-Valid-Time` 是请求时间，`X-WK3-Source-Valid-Time` 是实际外推帧时间，`X-WK3-Origin` 是最新历史源时间。源延迟不靠改时间消除：每帧真实按 `(valid_time-origin)/60` 调用预测，源最多延迟 20 分钟，因此最大实际 lead 不超过 80 分钟。`X-WK3-Forecast-Start/End` 是已发布首末帧的 UNIX 秒，`X-WK3-Lead-Minutes/Max-Lead-Minutes` 明示实际 lead；请求不能晚于末帧或服务器当前时间 +60 分钟。`X-WK3-Source-Age` 明示源年龄，`X-WK3-Generated-At/Expires-At` 明示生成和过期时间。到下个五分钟格点或源年龄 20 分钟即过期，重新准备，仍保留 `Cache-Control: no-store`。
+
+调度使用一个 worker、最多 16 个等待 tile，重复 tile 去重，每 tile 尝试间隔至少 60 秒。共享源缓存仍执行 90 次/分钟上限，触及限额由 worker 等待后有限重试；队满仍返回 202，调用者应按 Retry-After 重试。七帧全部有效才原子发布 manifest，生成文件逐一原子替换；发布后删除未引用的 KTX，并清理两小时前不再使用的 tile 和源帧缓存。运行下载验证脚本时须以 `radar-demo` 服务用户写共享源缓存，避免 root 属主目录阻止服务刷新。
+
 可选定向验证：在自己的 VPS 上先设置 `VPS_ORIGIN=https://你的VPS域名`，再运行 `deploy/verify-live.py`。脚本仅供 root 运行：读取本机令牌后立即降权，随机无放回从已声明 18 城抽 8 城，保留全部抽中记录，单 worker 有界构建一个合适的真实回波 tile。脱敏结果保存抽样统计、响应状态／头和尺寸，不保存令牌或二进制 tile，写入 `/var/lib/radar-demo/deployment-result.json`。在 VPS 上访问自身域名可能走本地路由，不能当作外部客户端或 Worker 回源成功证据。
 
 如果你自己的 VPS 已配置 WARP SOCKS5，可用 `python3 deploy/verify-warp.py 'https://你的VPS域名/v1/radar?有效瓦片参数'` 做指定 URL 的外部路径复验；该脚本不会自动选择后端或固定历史时间。最终仍需用你自己的 Worker 与代理模块实际测试，`/health` 的配置状态不能代替雷达 200 图层验收。

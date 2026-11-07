@@ -23,7 +23,7 @@ class Tests(unittest.TestCase):
    now=1793983200;s=Store(tmp,clock=lambda:now);t=(7,108,47);d=s.directory(t);d.mkdir();b=encode_echo(np.ones((256,256),bool),np.ones((256,256),bool));(d/'f.ktx').write_bytes(b)
    m=dict(origin=now-300,frames=[dict(valid_time=now-300,file='f.ktx')],mode='echo_occurrence_only',historical_replay=False)
    p=d/'manifest.json';p.write_text(json.dumps(m));r=s.lookup(t,now-300);self.assertEqual(r[0],b);self.assertEqual(r[1]['X-WK3-Nowcast'],MARKER)
-   self.assertIsNotNone(s.lookup(t,now));self.assertIsNone(s.lookup(t,now+301));self.assertIsNone(s.lookup(t,now-301))
+   self.assertIsNone(s.lookup(t,now));self.assertIsNone(s.lookup(t,now+301));self.assertIsNone(s.lookup(t,now-301))
    m['historical_replay']=True;p.write_text(json.dumps(m));self.assertIsNone(s.lookup(t,now-300))
    m.update(historical_replay=False,origin=now-1201);p.write_text(json.dumps(m));self.assertIsNone(s.lookup(t,now-1201))
  def test_actual_http_exact_body_and_missing_passthrough(self):

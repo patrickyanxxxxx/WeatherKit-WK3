@@ -70,9 +70,12 @@ function validate(response, body, t, now) {
   const h = headersOf(response.headers);
   if (h['x-wk3-nowcast'] !== 'EXPERIMENTAL-RADAR-ECHO' || !/^image\/ktx(?:\s*;.*)?$/i.test(h['content-type'] || '') || !/(?:^|,)\s*no-store\s*(?:,|$)/i.test(h['cache-control'] || '')) throw Error('marker');
   const valid = h['x-wk3-valid-time'], origin = h['x-wk3-origin'];
-  if (!/^[0-9]{1,12}$/.test(valid || '') || !/^[0-9]{1,12}$/.test(origin || '') || Number(valid) !== t.time || Number(origin) > now || now - Number(origin) > 1200 || t.time < Number(origin) || t.time > Number(origin) + 3600) throw Error('time');
+  if (!/^[0-9]{1,12}$/.test(valid || '') || !/^[0-9]{1,12}$/.test(origin || '') || Number(valid) !== t.time || Number(origin) > now || now - Number(origin) > 1200 || t.time < Number(origin)) throw Error('time');
+  const endText = h['x-wk3-forecast-end'];
+  const end = endText === undefined ? Number(origin) + 3600 : Number(endText);
+  if ((endText !== undefined && !/^[0-9]{1,12}$/.test(endText)) || end < Number(origin) || end > Number(origin) + 4800 || t.time > end || t.time > now + 3600) throw Error('time');
   const source = h['x-wk3-source-valid-time'];
-  if (source !== undefined && (!/^[0-9]{1,12}$/.test(source) || Math.abs(Number(source) - t.time) > 300)) throw Error('source-time');
+  if (source !== undefined && (!/^[0-9]{1,12}$/.test(source) || Number(source) < Number(origin) || Number(source) > end || Math.abs(Number(source) - t.time) > 300)) throw Error('source-time');
   const b = bytesOf(body);
   if (b.length !== 65604) throw Error('size');
   const magic = [171,75,84,88,32,49,49,187,13,10,26,10];
@@ -80,7 +83,7 @@ function validate(response, body, t, now) {
   const view = new DataView(b.buffer, b.byteOffset, b.byteLength);
   const fields = [0x04030201,0,1,0,0x93b7,0x1908,512,512,0,0,1,1,0,65536];
   if (fields.some((v, i) => view.getUint32(12 + 4 * i, true) !== v)) throw Error('ktx');
-  return { bytes: b, headers: { 'Content-Type': 'image/ktx', 'Cache-Control': 'no-store', 'X-WK3-Nowcast': h['x-wk3-nowcast'], 'X-WK3-Valid-Time': valid, 'X-WK3-Origin': origin, ...(source === undefined ? {} : { 'X-WK3-Source-Valid-Time': source }) } };
+  return { bytes: b, headers: { 'Content-Type': 'image/ktx', 'Cache-Control': 'no-store', 'X-WK3-Nowcast': h['x-wk3-nowcast'], 'X-WK3-Valid-Time': valid, 'X-WK3-Origin': origin, ...(source === undefined ? {} : { 'X-WK3-Source-Valid-Time': source }), ...(endText === undefined ? {} : { 'X-WK3-Forecast-End': endText }), 'X-WK3-Attribution': 'Weather data by RainViewer; extrapolation by this project', 'X-WK3-Display': 'echo-occurrence-only-not-intensity' } };
 }
 function gatewayURL(endpoint, t) {
   // Construct afresh. No Apple URL, auth, query extras or request headers are copied.

@@ -24,7 +24,7 @@ test('valid binary roundtrip builds fresh upstream request and strips credential
     assert.equal(new URL(url).searchParams.size, 5);
     assert.deepEqual([...options.headers.keys()].sort(), ['accept', 'authorization']);
     assert.equal(options.headers.get('authorization'), 'Bearer test-only-token');
-    assert.equal(options.redirect, 'error');
+    assert.equal(options.redirect, 'manual');
     return new Response(tile(), { headers: headers() });
   });
   assert.equal(calls, 1); assert.equal(response.status, 200);
@@ -51,6 +51,14 @@ test('cold and unavailable tiles remain non-weather responses', async () => {
     const response = await handle(new Request(base), env, async () => new Response(null, { status }));
     assert.equal(response.status, status); assert.equal(response.headers.get('x-wk3-nowcast'), null);
   }
+});
+test('redirect responses are rejected without following or forwarding a secret', async () => {
+  let calls = 0;
+  const response = await handle(new Request(base), env, async (url, options) => {
+    calls++; assert.equal(options.redirect, 'manual');
+    return new Response(null, { status: 302, headers: { Location: 'https://other.example' } });
+  });
+  assert.equal(calls, 1); assert.equal(response.status, 502);
 });
 test('invalid query and arbitrary routes never reach VPS', async () => {
   const unexpected = async () => { assert.fail('must not fetch'); };

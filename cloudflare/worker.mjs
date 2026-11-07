@@ -22,8 +22,11 @@ export function parseTile(url, now) {
 export function validHeaders(headers, time, now) {
   if (headers.get('X-WK3-Nowcast') !== marker || !/^image\/ktx(?:\s*;.*)?$/i.test(headers.get('Content-Type') || '') || !/(?:^|,)\s*no-store\s*(?:,|$)/i.test(headers.get('Cache-Control') || '')) return false;
   const origin = headers.get('X-WK3-Origin'), valid = headers.get('X-WK3-Valid-Time'), source = headers.get('X-WK3-Source-Valid-Time');
-  if (![origin, valid].every(v => /^[0-9]{1,12}$/.test(v || '')) || Number(valid) !== time || Number(origin) > now || now - Number(origin) > 1200 || time < Number(origin) || time > Number(origin) + 3600) return false;
-  return source === null || (/^[0-9]{1,12}$/.test(source) && Math.abs(Number(source) - time) <= 300);
+  if (![origin, valid].every(v => /^[0-9]{1,12}$/.test(v || '')) || Number(valid) !== time || Number(origin) > now || now - Number(origin) > 1200 || time < Number(origin)) return false;
+  const endText = headers.get('X-WK3-Forecast-End');
+  const end = endText === null ? Number(origin) + 3600 : Number(endText);
+  if ((endText !== null && !/^[0-9]{1,12}$/.test(endText)) || end < Number(origin) || end > Number(origin) + 4800 || time > end || time > now + 3600) return false;
+  return source === null || (/^[0-9]{1,12}$/.test(source) && Number(source) >= Number(origin) && Number(source) <= end && Math.abs(Number(source) - time) <= 300);
 }
 export function validKTX(bytes) {
   if (bytes.length !== 65604) return false;
@@ -50,7 +53,7 @@ export async function handle(request, env, fetchBackend = fetch) {
   const headers = new Headers({ Accept: 'image/ktx' });
   if (env.VPS_TOKEN) headers.set('Authorization', `Bearer ${env.VPS_TOKEN}`);
   try {
-    const response = await fetchBackend(target.toString(), { method: 'GET', headers, redirect: 'error', signal: AbortSignal.timeout(7000) });
+    const response = await fetchBackend(target.toString(), { method: 'GET', headers, redirect: 'manual', signal: AbortSignal.timeout(7000) });
     if (response.status === 202) {
       await response.body?.cancel();
       return json(202, { status: 'preparing', retryAfter: 10 });
@@ -76,7 +79,7 @@ export async function handle(request, env, fetchBackend = fetch) {
     }
     if (length !== bytes.length || !validKTX(bytes)) return json(502, { error: 'invalid-upstream' });
     const output = new Headers({ 'Content-Type': 'image/ktx', 'Cache-Control': 'no-store' });
-    for (const name of ['X-WK3-Nowcast', 'X-WK3-Origin', 'X-WK3-Valid-Time', 'X-WK3-Source-Valid-Time', 'X-WK3-Display', 'X-WK3-Attribution']) {
+    for (const name of ['X-WK3-Nowcast', 'X-WK3-Origin', 'X-WK3-Valid-Time', 'X-WK3-Source-Valid-Time', 'X-WK3-Forecast-Start', 'X-WK3-Forecast-End', 'X-WK3-Max-Lead-Minutes', 'X-WK3-Display', 'X-WK3-Attribution']) {
       const value = response.headers.get(name); if (value !== null) output.set(name, value);
     }
     return new Response(bytes, { headers: output });
