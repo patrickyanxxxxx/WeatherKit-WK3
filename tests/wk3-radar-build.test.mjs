@@ -27,35 +27,60 @@ const validKTX = () => {
     return b;
 };
 
-for (const platform of Object.keys(radarPlatforms)) test(`${platform} Radar is one complete module with five weather groups and binary map`, () => {
+function moduleRoutes(platform, text) {
+    if (platform === 'surge') return [...text.matchAll(/^([^\n=]+) = type=http-(request|response), pattern=("[^"\n]+"|[^,\n]+),/gm)].map(([, name, stage, pattern]) => ({ name: name.trim(), stage, pattern: pattern.replace(/^"|"$/g, '') }));
+    if (platform === 'loon') return [...text.matchAll(/^http-(request|response) (\S+).*tag=([^,\n]+)/gm)].map(([, stage, pattern, name]) => ({ name, stage, pattern }));
+    if (platform === 'stash') return [...text.matchAll(/^    - match: '([^'\n]+)'\n      name: ([^\n]+)\n      type: (request|response)/gm)].map(([, pattern, name, stage]) => ({ name, stage, pattern }));
+    return [...text.matchAll(/^- http_(request|response):\n    name: ([^\n]+)[\s\S]*?\n    match: '([^'\n]+)'/gm)].map(([, stage, name, pattern]) => ({ name, stage, pattern }));
+}
+
+for (const platform of Object.keys(radarPlatforms)) test(`${platform} standalone Radar overlays ordinary weather without duplicate routes or settings`, () => {
     const plain = platform === 'egern' ? renderLocalModule({ version }) : renderWK3Module(platform, version);
     const radar = renderRadarModule(platform, version);
     assert.doesNotMatch(plain, /weather-map2\.apple\.com|wk3-radar-/);
-    const weatherURLs = text => text.match(/https:\/\/github\.com\/patrickyanxxxxx\/WeatherKit-WK3\/releases\/download\/v3\.3\.6\/wk3-[a-z]+-(?:request|response)\.bundle\.js/g) ?? [];
-    assert.deepEqual(weatherURLs(radar), weatherURLs(plain), 'all weather scripts must retain the original stable URL');
-    assert.equal(weatherURLs(radar).length, 5);
-    assert.doesNotMatch(radar, /wk3-radar-[a-z]+-(?:request|response)\.bundle\.js|releases\/download\/v3\.3\.6-test/);
-    assert.equal(radar.split(defaultScriptBase).length - 1, 1, 'only map script comes from experimental branch');
-    assert.match(radar, /3\.3\.6-test-radar-cloud\.1/);
-    assert.equal((radar.match(/wk3-radar-[a-z]+-map\.bundle\.js/g) ?? []).length, 1);
-    assert.equal((radar.match(/WeatherKit\.api\./g) ?? []).length, platform === 'stash' ? 10 : 5);
-    assert.match(radar, /weatherkit\.apple\.com/);
-    assert.match(radar, /weather-map2\.apple\.com/);
+    assert.doesNotMatch(radar, /weatherkit\.apple\.com|WeatherKit\.api\.|wk3-arguments|ColorfulClouds|QWeather|releases\/download/);
+    assert.equal(radar.split(defaultScriptBase).length - 1, 1);
+    assert.match(radar, /3\.3\.6-test-radar-cloud\.2/);
     assert.match(radar, /binary-body-mode=1|binary-mode: true|binary_body: true/);
     assert.match(radar, /RADAR_ENDPOINT/);
-    assert.match(radar, /EXPERIMENTAL|实验版/);
     assert.doesNotMatch(radar, /127\.0\.0\.1|__WK3_/);
-    if (platform === 'stash') {
-        assert.equal((radar.match(/^      argument: \*wk3-arguments$/gm) ?? []).length, 4);
-        assert.equal((radar.match(/^      argument: &wk3-arguments /gm) ?? []).length, 1);
-        assert.equal((radar.match(/^    - match: /gm) ?? []).length, 6);
+    const weatherRoutes = moduleRoutes(platform, plain), radarRoutes = moduleRoutes(platform, radar);
+    assert.equal(weatherRoutes.length, 5);
+    assert.equal(radarRoutes.length, 1);
+    assert.equal(radarRoutes[0].name, 'WK3.Experimental.Radar');
+    assert.equal(radarRoutes[0].stage, 'request');
+    assert.equal(new Set([...weatherRoutes, ...radarRoutes].map(r => r.name)).size, 6);
+    const cases = [
+        [appleURL, 'request', 'WK3.Experimental.Radar'],
+        [appleURL, 'response', null],
+        ['https://weatherkit.apple.com/api/v2/availability/zh', 'response', 'WeatherKit.api.availability.response'],
+        ['https://weatherkit.apple.com/api/v2/airQualityScale/zh/EPA_NowCast', 'request', 'WeatherKit.api.airQualityScale.request'],
+        ['https://weatherkit.apple.com/api/v2/weatherAlerts?ids=abc-123456789', 'request', 'WeatherKit.api.weatherAlerts.html.request'],
+        ['https://weatherkit.apple.com/api/v2/weatherAlerts?ids=wk3_example', 'request', 'WeatherKit.api.weatherAlerts.api.request'],
+        ['https://weatherkit.apple.com/api/v2/weatherAlerts?ids=31,121', 'request', 'WeatherKit.api.weatherAlerts.api.request'],
+        ['https://weatherkit.apple.com/api/v3/weather/zh/31/121?dataSets=airQuality,forecastNextHour,weatherAlerts', 'response', 'WeatherKit.api.weather.response'],
+        [appleURL.replace('precipitationRadarMap', 'precipitationForecastByFrameTime'), 'request', null],
+        [appleURL.replace('weather-map2.apple.com', 'weather-map2.apple.com.evil.example'), 'request', null],
+        ['https://radar.example.org/v1/radar?z=1', 'request', null],
+    ];
+    for (const modules of [[weatherRoutes, radarRoutes], [radarRoutes, weatherRoutes]]) for (const [url, stage, expected] of cases) {
+        const matches = modules.flat().filter(r => r.stage === stage && new RegExp(r.pattern).test(url));
+        assert.deepEqual(matches.map(r => r.name), expected ? [expected] : [], `${stage} ${url}`);
+        if (new URL(url).hostname === 'weatherkit.apple.com') assert.deepEqual(matches, weatherRoutes.filter(r => r.stage === stage && new RegExp(r.pattern).test(url)));
     }
+    const hosts = text => platform === 'stash' ? [...text.matchAll(/^    - ([\w.-]+\.apple\.com)$/gm)].map(m => m[1]) : platform === 'egern' ? [...text.split('\nmitm:\n')[1].matchAll(/^    - ([\w.-]+)$/gm)].map(m => m[1]) : text.match(/^hostname = (?:%APPEND% )?(.+)$/m)[1].split(/,\s*/);
+    assert.deepEqual(hosts(plain), ['weatherkit.apple.com']);
+    assert.deepEqual(hosts(radar), ['weather-map2.apple.com']);
+    assert.deepEqual([...new Set([...hosts(plain), ...hosts(radar)])].sort(), ['weather-map2.apple.com', 'weatherkit.apple.com']);
+    if (platform === 'surge') assert.match(radar, /hostname = %APPEND% weather-map2\.apple\.com/);
     if (platform === 'egern') {
         const get = name => JSON.parse(radar.match(new RegExp(`^${name}: (.*)$`, 'm'))[1]);
+        assert.deepEqual(Object.keys(get('env_schema')), ['RADAR_ENDPOINT']);
+        assert.deepEqual(get('compat_arguments'), { RADAR_ENDPOINT: '' });
         assert.equal(get('env_schema').RADAR_ENDPOINT.default_value, '');
-        assert.equal(get('compat_arguments').RADAR_ENDPOINT, '');
-        assert.equal((radar.match(/^- http_(?:request|response):/gm) ?? []).length, 6);
-    }
+        assert.match(radar, /- domain:\n        match: weather-map2\.apple\.com\n    - protocol:\n        match: udp\n    - dest_port:\n        match: '443'\n    policy: REJECT/);
+    } else if (platform === 'stash') assert.match(radar, /^  - 'AND,\(\(DOMAIN,weather-map2\.apple\.com\),\(NETWORK,udp\),\(DST-PORT,443\)\),REJECT'$/m);
+    else assert.equal((radar.match(/AND,\(\(DOMAIN,weather-map2\.apple\.com\),\(PROTOCOL,UDP\),\(DEST-PORT,443\)\),REJECT/g) ?? []).length, 1);
 });
 
 test('Radar files are separate; Quantumult X binary module is explicitly unsupported', () => {
@@ -105,8 +130,12 @@ async function run(platform, { argument = '', env = {}, responseHeaders = header
 }
 
 for (const platform of Object.keys(radarPlatforms)) test(`${platform} VM: user HTTPS endpoint only, strict marker/KTX/time, no Apple credentials`, async () => {
-    const argument = platform === 'surge' ? `RADAR_ENDPOINT="${endpoint}"` : platform === 'loon' ? `RADAR_ENDPOINT=${endpoint}` : platform === 'stash' ? JSON.stringify({ RADAR_ENDPOINT: endpoint }) : '';
-    const env = platform === 'egern' ? { RADAR_ENDPOINT: endpoint } : {};
+    const module = renderRadarModule(platform, version);
+    const template = platform === 'stash' ? JSON.parse(module.match(/^      argument: '(.*)'$/m)[1]) : null;
+    const argument = platform === 'surge' || platform === 'loon'
+        ? module.match(/, argument=(.*)$/m)[1].replace(/\{\{\{RADAR_ENDPOINT\}\}\}|\{RADAR_ENDPOINT\}/g, endpoint)
+        : platform === 'stash' ? JSON.stringify({ ...template, RADAR_ENDPOINT: endpoint }) : '';
+    const env = platform === 'egern' ? { ...JSON.parse(module.match(/^compat_arguments: (.*)$/m)[1]), RADAR_ENDPOINT: endpoint } : {};
     const empty = await run(platform);
     assert.equal(empty.requests.length, 0);
     assert.equal(empty.done.length, platform === 'egern' ? 0 : 1);
@@ -143,7 +172,7 @@ test('actual Radar CLI builds exactly eight files without bundling weather or de
         const runCLI = flags => spawnSync(process.execPath, [cli.pathname, '--version', version, '--outdir', dir, ...flags], { encoding: 'utf8' });
         const result = runCLI([]);
         assert.equal(result.status, 0, result.stderr);
-        assert.match(result.stdout, /4 map scripts, 4 complete modules/);
+        assert.match(result.stdout, /4 map scripts, 4 standalone modules/);
         assert.match(result.stdout, /Quantumult X: binary radar is unsupported/);
         const expected = Object.entries(radarPlatforms).flatMap(([p, ext]) => [`wk3-radar-${p}-map.bundle.js`, `iRingo.WeatherKit.WK3.Radar.${ext}`]).sort();
         assert.deepEqual(fs.readdirSync(dir).sort(), expected);
@@ -151,12 +180,12 @@ test('actual Radar CLI builds exactly eight files without bundling weather or de
             const text = fs.readFileSync(path.join(dir, `iRingo.WeatherKit.WK3.Radar.${ext}`), 'utf8');
             assert.equal(text, renderRadarModule(platform, version));
         }
-        const custom = runCLI(['--script-base', 'https://cdn.example.org/radar', '--module-version', '3.3.6-test-radar-cloud.2']);
+        const custom = runCLI(['--script-base', 'https://cdn.example.org/radar', '--module-version', '3.3.6-test-radar-cloud.3']);
         assert.equal(custom.status, 0, custom.stderr);
         for (const [platform, ext] of Object.entries(radarPlatforms)) {
             const text = fs.readFileSync(path.join(dir, `iRingo.WeatherKit.WK3.Radar.${ext}`), 'utf8');
             assert.ok(text.includes(`https://cdn.example.org/radar/wk3-radar-${platform}-map.bundle.js`));
-            assert.ok(text.includes('3.3.6-test-radar-cloud.2'));
+            assert.ok(text.includes('3.3.6-test-radar-cloud.3'));
             assert.doesNotMatch(text, /releases\/download\/v3\.3\.6-test/);
         }
         for (const base of ['http://cdn.example.org/', 'https://user:secret@cdn.example.org/', 'https://cdn.example.org/?token=private', 'https://cdn.example.org/#fragment', 'https://cdn.example.org/\n[Script]']) {

@@ -19,7 +19,7 @@
 | 空气质量标尺 | 按所需标准与语言在本机构建受支持的 AQ 标尺，供空气质量原生展示使用；上游已有的标尺能力接入本机脚本入口。 |
 | Apple 能力信息 | 合并 Apple availability 与模块支持能力，保留未知字段、原错误状态及语言响应头，避免固定能力列表覆盖原响应。 |
 | 多平台代理本机模块 | Egern、Surge、Loon、Stash、Quantumult X 共用 WK3 业务核心、参数和路由，分别生成客户端专用脚本与模块；Quantumult X 的二进制处理限制见平台表。 |
-| 二维雷达实验扩展 | 增加 RainViewer 历史回波取源、邻域拼图、运动估计、0–60 分钟外推及 Apple KTX 瓦片输出，通过自有 Worker 和 VPS 接入原生降水地图；支持四款代理的独立增强模块，详见雷达段落。 |
+| 二维雷达实验扩展 | 增加 RainViewer 历史回波取源、邻域拼图、运动估计、0–60 分钟外推及 Apple KTX 瓦片输出，通过自有 Worker 和 VPS 接入原生降水地图；支持四款代理的独立雷达模块，详见雷达段落。 |
 
 ### 空气质量算法与配置
 
@@ -53,13 +53,17 @@
 
 五平台统一构建入口为 `npm run build:wk3`：调用 Egern `scripts/build-egern.mjs` 和其他平台 `scripts/build-wk3-platform.mjs`，生成 10 份平台专用 JS。打标签时添加 `-- --version <版本号>`，同时生成 5 份模块至 `dist/` 根目录；Egern 模块改为指向同版本的发行附件，与其他平台一同进入现有构建/Release 工作流。请使用发行附件中的模块；五平台脚本不能互换。
 
-## 雷达增强实验模块
+## 独立雷达实验模块
 
-[部署到你自己的 Cloudflare](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fpatrickyanxxxxx%2FWeatherKit-WK3%2Ftree%2Ffeat%2Fcloudflare-radar%2Fcloudflare)。部署页填写你自己的 `VPS_ORIGIN` 和 Secret `VPS_TOKEN`，部署后将自己的 Worker 地址填入模块；没有默认共享后端。
+[部署到你自己的 Cloudflare](https://deploy.workers.cloudflare.com/?url=https%3A%2F%2Fgithub.com%2Fpatrickyanxxxxx%2FWeatherKit-WK3%2Ftree%2Ffeat%2Fcloudflare-radar%2Fcloudflare)。部署页填写你自己的 `VPS_ORIGIN` 和 Secret `VPS_TOKEN`，部署后将自己的 Worker 地址填入雷达模块；没有默认共享后端。
 
-雷达增强版保留正式 v3.3.6 的本地天气脚本与参数：空气质量计算、分钟雨和预警补全仍在 Surge／Loon／Stash／Egern 内执行，相关第三方凭据保留在设备。只有二维雷达回波外推交给自有 VPS，Cloudflare Worker 提供 HTTPS 接入；Worker 不接管普通天气请求。
+**普通 WK3 天气模块与独立雷达模块同时启用。** 空气质量、分钟雨、昨日比较和预警仍由普通模块在代理本地处理，原有天气参数和第三方凭据继续留在普通模块。雷达模块只有 `RADAR_ENDPOINT` 一项设置、一条地图请求脚本、地图域 MITM 和该域 UDP 443 拒绝规则；二维雷达外推通过自己的 Worker 交给自己的 VPS。
 
-`npm run build:wk3:radar -- --version 3.3.6 --outdir dist-radar` 仅生成四个平台的完整增强模块和四份雷达脚本，复用已发布天气脚本，不重建普通版。增强模块与普通模块二选一启用；`RADAR_ENDPOINT` 默认空，用户填写自己的 Worker `/v1/radar`。Quantumult X 暂不提供雷达版。部署与实验能力边界见 [Cloudflare 与自有 VPS 指南](cloudflare/README.zh.md)。
+`npm run build:wk3:radar -- --version 3.3.6 --outdir dist-radar` 生成 Surge／Loon／Stash／Egern 的四份独立雷达模块与四份雷达脚本，不包含普通天气脚本或天气参数。`RADAR_ENDPOINT` 默认空，填写自己的 Worker `https://<自己的域名>/v1/radar`；空值或雷达校验失败时保留 Apple 响应。Quantumult X 暂不提供雷达模块。
+
+由旧完整增强版迁移时，先关闭旧增强模块及其他地图实验模块，启用普通 WK3 模块并核对原天气参数，再启用一份对应平台的独立雷达模块、填写端点。请勿同时保留旧增强模块或重复安装雷达模块，以免重复执行。MITM 启用并信任证书后，普通模块提供 `weatherkit.apple.com`，雷达模块追加 `weather-map2.apple.com`；两份模块各自维护脚本和参数。
+
+部署及实验能力边界见 [Cloudflare 与自有 VPS 指南](cloudflare/README.zh.md)。
 
 ## 代码组织
 
