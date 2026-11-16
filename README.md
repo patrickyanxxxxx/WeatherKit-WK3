@@ -1,5 +1,7 @@
 #  iRingo: 🌤 WeatherKit
 
+> **本分支新增 v4 运动雷达实验源码**：[中文边界说明](experimental/radar-motion-v4/BOUNDARIES.zh.md) · [源码与自部署](experimental/radar-motion-v4/README.md)。大陆一小时地图的原生斜线尚不能安全移除；临时雨强色标未标定、仅101个内陆z7瓦片/Surge得到验证。不是正式发布，不要将本分支当作 `main` 的功能保证。
+
 基于 [NSRingo/WeatherKit](https://github.com/NSRingo/WeatherKit) **v3.3.2 / `main`（`c40e8f8`）**，面向 iOS 27 的 WK3 天气接口增加代理软件本机处理，并保留上游 WK2 入口。本分支还提供可自行部署的二维雷达回波外推实验模块。
 
 普通天气功能在代理软件内执行，按所选来源请求 Apple、彩云或和风数据；雷达增强功能需要用户自己的 Cloudflare Worker 和 VPS。各平台支持范围、默认设置和部署入口见下文。
